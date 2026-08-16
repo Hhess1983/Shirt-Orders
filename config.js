@@ -71,9 +71,9 @@ window.SHIRT_ORDER_CONFIG = {
       handle: "Payment details provided after order submission",
       url: ""
     },
-    zelle: {
-      label: "Zelle",
-      handle: "Payment details provided after order submission",
+    cash: {
+      label: "Cash",
+      handle: "",
       url: ""
     }
   }
