@@ -135,3 +135,55 @@ pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f8; padding
   .dialog-actions { grid-template-columns: 1fr; }
   .dialog-actions .payment-after-submit { grid-column: auto; }
 }
+
+.mobile-total-bar {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-total-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 12px 16px;
+    background: #ffffff;
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.10);
+    z-index: 1000;
+  }
+
+  .mobile-total-label {
+    display: block;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  #mobileGrandTotal {
+    display: block;
+    font-size: 1.35rem;
+  }
+
+  #viewOrderButton {
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 18px;
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  body {
+    padding-bottom: 78px;
+  }
+}
