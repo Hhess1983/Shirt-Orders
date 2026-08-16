@@ -430,12 +430,12 @@ async function submitOrderToSheet() {
     }
 
     if (result && result.success === false) {
-      throw new Error(result.error || 'Google Sheets rejected the order.');
+      throw new Error(result.error || 'Your order has been rejected.');
     }
 
     orderSubmitted = true;
     els.submitOrder.textContent = 'Order Submitted ✓';
-    els.submitStatus.textContent = `${currentOrder.payload.orderNumber} was saved to Google Sheets.`;
+    els.submitStatus.textContent = `${currentOrder.payload.orderNumber} has been submitted.`;
     els.submitStatus.className = 'submit-status success';
   } catch (error) {
     // Fallback for browsers/deployments that block reading the Apps Script response
@@ -449,7 +449,7 @@ async function submitOrderToSheet() {
       });
       orderSubmitted = true;
       els.submitOrder.textContent = 'Order Submitted ✓';
-      els.submitStatus.textContent = `${currentOrder.payload.orderNumber} was sent to Google Sheets.`;
+      els.submitStatus.textContent = `${currentOrder.payload.orderNumber} has been submitted.`;
       els.submitStatus.className = 'submit-status success';
     } catch (fallbackError) {
       els.submitOrder.disabled = false;
