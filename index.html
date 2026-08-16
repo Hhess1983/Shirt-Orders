@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
+  <title>Shirt Order</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">CUSTOM APPAREL</p>
+        <h1>Shirt Order</h1>
+        <p class="hero-copy">Choose your garment, sizes and print locations. Your price updates automatically as you build the order.</p>
+      </div>
+      <div class="hero-badge">Build • Review • Pay</div>
+    </section>
+
+    <form id="orderForm" class="layout">
+      <section class="form-column">
+        <article class="card">
+          <h2>Customer</h2>
+          <label class="field-label" for="customerName">Customer Name <span>*</span></label>
+          <input id="customerName" name="customerName" type="text" autocomplete="name" required placeholder="Your name" />
+        </article>
+
+        <article class="card">
+          <h2>Shirt Type <span>*</span></h2>
+          <p class="hint">Select a garment type. Available brands will update automatically.</p>
+          <div id="shirtTypeOptions" class="option-grid"></div>
+        </article>
+
+        <article class="card">
+          <h2>Shirt Brand <span>*</span></h2>
+          <div id="brandOptions" class="option-grid">
+            <p class="empty-state">Choose a shirt type first.</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Shirt Size & Quantity <span>*</span></h2>
+          <p class="hint">Choose one or more sizes. 2XL and larger are +$3 per shirt.</p>
+          <div id="sizeOptions" class="size-list"></div>
+        </article>
+
+        <article class="card two-col">
+          <div>
+            <label class="field-label" for="shirtColor">Shirt Color <span>*</span></label>
+            <input id="shirtColor" name="shirtColor" type="text" required placeholder="Example: Black" />
+          </div>
+          <div>
+            <label class="field-label" for="printImage">Print Image / Design <span>*</span></label>
+            <input id="printImage" name="printImage" type="text" required placeholder="Image or design name" />
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Print Location <span>*</span></h2>
+          <p class="hint">Select every location you want printed. Print pricing is charged per shirt.</p>
+          <div id="printLocationOptions" class="option-grid"></div>
+        </article>
+
+        <article class="card">
+          <label class="field-label" for="notes">Order Notes</label>
+          <textarea id="notes" name="notes" rows="4" placeholder="Anything else we should know?"></textarea>
+        </article>
+      </section>
+
+      <aside class="summary-column">
+        <div class="summary-card sticky">
+          <div class="summary-top">
+            <div>
+              <p class="eyebrow">ORDER SUMMARY</p>
+              <h2>Your Total</h2>
+            </div>
+            <div id="grandTotal" class="grand-total">$0.00</div>
+          </div>
+
+          <div class="notice success-notice">
+            Pricing is live. The total includes the garment, selected print locations, size upcharges and quantities.
+          </div>
+
+          <div id="summaryLines" class="summary-lines"></div>
+
+          <div class="discount-box">
+            <label class="field-label" for="discountCode">Discount Code</label>
+            <div class="discount-row">
+              <input id="discountCode" type="text" autocomplete="off" placeholder="Enter code" />
+              <button id="applyDiscount" type="button" class="secondary-button">Apply</button>
+            </div>
+            <div id="discountMessage" class="discount-message" aria-live="polite"></div>
+          </div>
+
+          <hr />
+
+          <h3>Payment Method</h3>
+          <div id="paymentOptions" class="payment-options"></div>
+
+          <div id="paymentInstructions" class="payment-instructions hidden"></div>
+
+          <button class="primary-button" type="submit">Review Order</button>
+          <p class="fine-print">Payment details are kept out of the public website files and can be provided after the order is submitted.</p>
+        </div>
+      </aside>
+    </form>
+  </main>
+
+  <dialog id="reviewDialog">
+    <div class="dialog-inner">
+      <button id="closeDialog" class="close-button" type="button" aria-label="Close">×</button>
+      <p class="eyebrow">READY TO SEND</p>
+      <h2>Order Review</h2>
+      <pre id="reviewText"></pre>
+      <div id="submitStatus" class="submit-status" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button id="copyOrder" type="button" class="secondary-button">Copy Order Summary</button>
+        <button id="submitOrder" type="button" class="primary-button">Submit Order</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
