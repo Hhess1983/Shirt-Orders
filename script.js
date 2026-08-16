@@ -368,6 +368,7 @@ function buildOrder() {
   const color = document.getElementById('shirtColor').value.trim();
   const image = document.getElementById('printImage').value.trim();
   const notes = document.getElementById('notes').value.trim();
+  const customerEmail = document.getElementById('customerEmail').value.trim();
 
   const sizesText = calc.sizes.map(s => `${s.name} x${s.qty}`).join(', ');
   const locationsText = calc.locations.map(x => x.value).join(', ');
@@ -387,11 +388,13 @@ function buildOrder() {
     discountAmount: Number(calc.discount.amount.toFixed(2)),
     total: Number(calc.total.toFixed(2)),
     paymentMethod: p?.label || ''
+    customerEmail: customerEmail,
   };
 
   const text = [
     `Order: ${orderId}`,
     `Customer: ${customer}`,
+    customerEmail ? `Email: ${customerEmail}` : '',
     `Shirt Type: ${payload.shirtType || 'Not selected'}`,
     `Brand: ${payload.brand || 'Not selected'}`,
     `Size(s): ${sizesText || 'Not selected'}`,
