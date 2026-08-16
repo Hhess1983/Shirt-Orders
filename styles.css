@@ -84,11 +84,15 @@ pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f8; padding
 .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .dialog-actions .primary-button { width: auto; }
 
-@media (max-width: 900px) {
+@media (max-width: 900px) { 
   .layout { grid-template-columns: 1fr; }
+  .form-column { order: 1; }
+  .summary-column { order: 2; }
   .sticky { position: static; }
-  .summary-column { order: -1; }
-  .hero { align-items: start; flex-direction: column; }
+  .hero {
+    align-items: start;
+    flex-direction: column;
+  }
 }
 @media (max-width: 600px) {
   .page-shell { padding: 24px 12px 40px; }
