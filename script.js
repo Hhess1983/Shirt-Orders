@@ -33,12 +33,10 @@ function optionPrice(price, prefix = '+') {
 function renderTypes() {
   const types = Object.keys(cfg.products);
   els.type.innerHTML = types.map((name, i) => {
-    const starting = Math.min(...cfg.products[name].map(x => x.garmentPrice)) + Math.min(...cfg.printLocations.map(x => x.price));
     return `
       <label class="option-label">
         <input type="radio" name="shirtType" value="${name}" ${i === 0 ? 'required' : ''}>
         <span>${name}</span>
-        <span class="option-price">from ${money.format(starting)}</span>
       </label>`;
   }).join('');
 }
