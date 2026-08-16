@@ -16,6 +16,8 @@ const els = {
   discountCode: document.getElementById('discountCode'),
   applyDiscount: document.getElementById('applyDiscount'),
   discountMessage: document.getElementById('discountMessage'),
+  mobileTotal: document.getElementById('mobileGrandTotal'),
+  viewOrderButton: document.getElementById('viewOrderButton'),
   submitOrder: document.getElementById('submitOrder'),
   submitStatus: document.getElementById('submitStatus')
 };
@@ -201,6 +203,9 @@ function calculate() {
   els.lines.innerHTML = lines.map(([label, value, cls]) => `
     <div class="summary-line ${cls}"><span>${label}</span><span>${value}</span></div>`).join('');
   els.total.textContent = money.format(total);
+  if (els.mobileTotal) {
+  els.mobileTotal.textContent = money.format(total);
+}
 
   return { total, subtotal, discount, itemCount, sizes, type, brand, locations, garmentPrice, printPricePerShirt, garmentSubtotal, printSubtotal, sizeSubtotal };
 }
@@ -487,3 +492,11 @@ document.getElementById('copyOrder').addEventListener('click', async () => {
   btn.textContent = 'Copied';
   setTimeout(() => btn.textContent = original, 1200);
 });
+if (els.viewOrderButton) {
+  els.viewOrderButton.addEventListener('click', () => {
+    document.querySelector('.summary-column').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  });
+}
