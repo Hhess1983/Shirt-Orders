@@ -63,13 +63,13 @@ window.SHIRT_ORDER_CONFIG = {
   payments: {
     venmo: {
       label: "Venmo",
-      handle: "Payment details provided after order submission",
-      url: ""
+      handle: "@Heather-Hess-108",
+      url: "https://venmo.com/Heather-Hess-108"
     },
     cashapp: {
       label: "Cash App",
-      handle: "Payment details provided after order submission",
-      url: ""
+      handle: "$Hhess1983",
+      url: "https://cash.app/$Hhess1983"
     },
     cash: {
       label: "Cash",

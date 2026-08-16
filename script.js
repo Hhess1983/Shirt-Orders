@@ -403,6 +403,28 @@ function buildOrder() {
   return { text, payment: p, payload };
 }
 
+function continueToPaymentAfterSubmit() {
+  if (!currentOrder || !currentOrder.payment) return;
+
+  const payment = currentOrder.payment;
+
+  // Cash has no external payment destination.
+  if (currentOrder.payload.paymentMethod === 'Cash' || !payment.url) {
+    els.submitStatus.textContent =
+      `Order ${currentOrder.payload.orderNumber} has been submitted. Payment method: Cash.`;
+    return;
+  }
+
+  els.submitStatus.textContent =
+    `Order ${currentOrder.payload.orderNumber} has been submitted. Opening ${payment.label}…`;
+
+  // A same-tab navigation is more reliable on mobile than window.open()
+  // after an asynchronous network request.
+  setTimeout(() => {
+    window.location.href = payment.url;
+  }, 700);
+}
+
 async function submitOrderToSheet() {
   if (!currentOrder || orderSubmitted) return;
 
@@ -440,8 +462,9 @@ async function submitOrderToSheet() {
 
     orderSubmitted = true;
     els.submitOrder.textContent = 'Order Submitted ✓';
-    els.submitStatus.textContent = `${currentOrder.payload.orderNumber} has been submitted.`;
+    els.submitStatus.textContent = `Order ${currentOrder.payload.orderNumber} has been submitted.`;
     els.submitStatus.className = 'submit-status success';
+    continueToPaymentAfterSubmit();
   } catch (error) {
     // Fallback for browsers/deployments that block reading the Apps Script response
     // even though the POST itself is allowed.
@@ -454,8 +477,9 @@ async function submitOrderToSheet() {
       });
       orderSubmitted = true;
       els.submitOrder.textContent = 'Order Submitted ✓';
-      els.submitStatus.textContent = `${currentOrder.payload.orderNumber} has been submitted.`;
+      els.submitStatus.textContent = `Order ${currentOrder.payload.orderNumber} has been submitted.`;
       els.submitStatus.className = 'submit-status success';
+      continueToPaymentAfterSubmit();
     } catch (fallbackError) {
       els.submitOrder.disabled = false;
       els.submitOrder.textContent = 'Submit Order';
