@@ -187,3 +187,12 @@ pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f8; padding
     padding-bottom: 78px;
   }
 }
+
+.mobile-payment-action {
+  margin-top: 14px;
+}
+.mobile-payment-link {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}

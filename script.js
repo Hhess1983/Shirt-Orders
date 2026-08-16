@@ -19,7 +19,9 @@ const els = {
   mobileTotal: document.getElementById('mobileGrandTotal'),
   viewOrderButton: document.getElementById('viewOrderButton'),
   submitOrder: document.getElementById('submitOrder'),
-  submitStatus: document.getElementById('submitStatus')
+  submitStatus: document.getElementById('submitStatus'),
+  mobilePaymentAction: document.getElementById('mobilePaymentAction'),
+  mobilePaymentLink: document.getElementById('mobilePaymentLink')
 };
 
 let activeDiscount = null;
@@ -407,19 +409,33 @@ function continueToPaymentAfterSubmit() {
   if (!currentOrder || !currentOrder.payment) return;
 
   const payment = currentOrder.payment;
+  const isCash = currentOrder.payload.paymentMethod === 'Cash';
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-  // Cash has no external payment destination.
-  if (currentOrder.payload.paymentMethod === 'Cash' || !payment.url) {
+  els.mobilePaymentAction.classList.add('hidden');
+  els.mobilePaymentLink.removeAttribute('href');
+
+  if (isCash || !payment.url) {
     els.submitStatus.textContent =
       `Order ${currentOrder.payload.orderNumber} has been submitted. Payment method: Cash.`;
     return;
   }
 
+  // On mobile, external app handoffs are most reliable from a direct customer tap.
+  if (isMobile) {
+    els.submitStatus.textContent =
+      `Order ${currentOrder.payload.orderNumber} has been submitted. Tap below to pay with ${payment.label}.`;
+
+    els.mobilePaymentLink.textContent = `Pay with ${payment.label}`;
+    els.mobilePaymentLink.href = payment.url;
+    els.mobilePaymentAction.classList.remove('hidden');
+    return;
+  }
+
+  // Desktop browsers can usually follow the redirect after the save completes.
   els.submitStatus.textContent =
     `Order ${currentOrder.payload.orderNumber} has been submitted. Opening ${payment.label}…`;
 
-  // A same-tab navigation is more reliable on mobile than window.open()
-  // after an asynchronous network request.
   setTimeout(() => {
     window.location.href = payment.url;
   }, 700);
@@ -496,6 +512,8 @@ els.form.addEventListener('submit', (e) => {
 
   currentOrder = buildOrder();
   orderSubmitted = false;
+  els.mobilePaymentAction.classList.add('hidden');
+  els.mobilePaymentLink.removeAttribute('href');
 
   els.review.textContent = currentOrder.text;
 
