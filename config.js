@@ -64,12 +64,12 @@ window.SHIRT_ORDER_CONFIG = {
     venmo: {
       label: "Venmo",
       handle: "@Heather-Hess-108",
-      url: "https://venmo.com/Heather-Hess-108"
+      url: ""
     },
     cashapp: {
       label: "Cash App",
       handle: "$Hhess1983",
-      url: "https://cash.app/$Hhess1983"
+      url: ""
     },
     cash: {
       label: "Cash",

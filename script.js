@@ -20,8 +20,6 @@ const els = {
   viewOrderButton: document.getElementById('viewOrderButton'),
   submitOrder: document.getElementById('submitOrder'),
   submitStatus: document.getElementById('submitStatus'),
-  mobilePaymentAction: document.getElementById('mobilePaymentAction'),
-  mobilePaymentLink: document.getElementById('mobilePaymentLink')
 };
 
 let activeDiscount = null;
@@ -213,12 +211,22 @@ function calculate() {
 }
 function updatePaymentInstructions() {
   const choice = selectedRadio('payment');
+
   if (!choice) {
     els.instructions.classList.add('hidden');
     return;
   }
+
   const p = cfg.payments[choice.value];
-  els.instructions.innerHTML = `<strong>${p.label}</strong><br>Pay <strong>${els.total.textContent}</strong> to <strong>${p.handle}</strong>. Include the customer name in the payment note.`;
+
+  if (choice.value === 'cash') {
+    els.instructions.innerHTML =
+      `<strong>Cash</strong><br>Pay when the order is picked up.`;
+  } else {
+    els.instructions.innerHTML =
+      `<strong>${p.label}</strong><br>Payment instructions will appear after the order is submitted.`;
+  }
+
   els.instructions.classList.remove('hidden');
 }
 
@@ -409,36 +417,29 @@ function continueToPaymentAfterSubmit() {
   if (!currentOrder || !currentOrder.payment) return;
 
   const payment = currentOrder.payment;
-  const isCash = currentOrder.payload.paymentMethod === 'Cash';
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const orderNumber = currentOrder.payload.orderNumber;
+  const total = money.format(currentOrder.payload.total);
 
-  els.mobilePaymentAction.classList.add('hidden');
-  els.mobilePaymentLink.removeAttribute('href');
-
-  if (isCash || !payment.url) {
-    els.submitStatus.textContent =
-      `Order ${currentOrder.payload.orderNumber} has been submitted. Payment method: Cash.`;
-    return;
+  // No redirects or external login pages.
+  if (currentOrder.payload.paymentMethod === 'Cash') {
+    els.submitStatus.innerHTML =
+      `Order <strong>${orderNumber}</strong> has been submitted.<br>` +
+      `Total: <strong>${total}</strong><br>` +
+      `Payment method: <strong>Cash</strong><br>` +
+      `Please pay when the order is picked up.`;
+  } else {
+    els.submitStatus.innerHTML =
+      `Order <strong>${orderNumber}</strong> has been submitted.<br>` +
+      `Total: <strong>${total}</strong><br>` +
+      `Open the ${payment.label} app and send payment to <strong>${payment.handle}</strong>.<br>` +
+      `Please include <strong>${orderNumber}</strong> in the payment note.`;
   }
 
-  // On mobile, external app handoffs are most reliable from a direct customer tap.
-  if (isMobile) {
-    els.submitStatus.textContent =
-      `Order ${currentOrder.payload.orderNumber} has been submitted. Tap below to pay with ${payment.label}.`;
-
-    els.mobilePaymentLink.textContent = `Pay with ${payment.label}`;
-    els.mobilePaymentLink.href = payment.url;
-    els.mobilePaymentAction.classList.remove('hidden');
-    return;
-  }
-
-  // Desktop browsers can usually follow the redirect after the save completes.
-  els.submitStatus.textContent =
-    `Order ${currentOrder.payload.orderNumber} has been submitted. Opening ${payment.label}…`;
-
-  setTimeout(() => {
-    window.location.href = payment.url;
-  }, 700);
+  // Hide any old mobile payment button/link from earlier versions.
+  if (els.mobilePaymentAction) {
+}
+  if (els.mobilePaymentLink) {
+}
 }
 
 async function submitOrderToSheet() {
@@ -512,10 +513,7 @@ els.form.addEventListener('submit', (e) => {
 
   currentOrder = buildOrder();
   orderSubmitted = false;
-  els.mobilePaymentAction.classList.add('hidden');
-  els.mobilePaymentLink.removeAttribute('href');
-
-  els.review.textContent = currentOrder.text;
+els.review.textContent = currentOrder.text;
 
   els.submitOrder.disabled = false;
   els.submitOrder.textContent = 'Submit Order';
