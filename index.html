@@ -8,6 +8,7 @@
   <title>Shirt Order</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+<body>
   <div class="mobile-total-bar">
   <div>
     <span class="mobile-total-label">Total</span>
@@ -15,7 +16,7 @@
   </div>
   <button id="viewOrderButton" type="button">View Order</button>
 </div>
-<body>
+
   <main class="page-shell">
     <section class="hero">
       <div>
@@ -32,15 +33,16 @@
           <h2>Customer</h2>
           <label class="field-label" for="customerName">Customer Name <span>*</span></label>
           <input id="customerName" name="customerName" type="text" autocomplete="name" required placeholder="Your name" />
-          <label class="field-label" for="customerEmail">Email Address</label>
+          <label class="field-label" for="customerEmail">Email Address <span class="optional-label">(optional)</span></label>
           <input
             id="customerEmail"
             name="customerEmail"
             type="email"
             autocomplete="email"
-            placeholder="Optional - receive a copy of your order"
-             />
-        </article>
+            placeholder="Receive a copy of your order"
+          />
+          <p class="hint email-hint">Enter an email only if you would like a copy of your order receipt.</p>
+</article>
 
         <article class="card">
           <h2>Shirt Type <span>*</span></h2>
@@ -117,7 +119,7 @@
           <div id="paymentInstructions" class="payment-instructions hidden"></div>
 
           <button class="primary-button" type="submit">Review Order</button>
-          <p class="fine-print">Payment details are kept out of the public website files and can be provided after the order is submitted.</p>
+          <p class="fine-print">Your selected payment account details will be shown only after the order has been submitted.</p>
         </div>
       </aside>
     </form>

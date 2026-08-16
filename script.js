@@ -89,7 +89,6 @@ function renderPayments() {
     <label class="payment-label">
       <input type="radio" name="payment" value="${key}" ${i === 0 ? 'required' : ''}>
       <strong>${p.label}</strong>
-      <span class="option-price">${p.handle}</span>
     </label>`).join('');
 }
 
@@ -387,8 +386,8 @@ function buildOrder() {
     discountCode: calc.discount.code || '',
     discountAmount: Number(calc.discount.amount.toFixed(2)),
     total: Number(calc.total.toFixed(2)),
-    paymentMethod: p?.label || ''
-    customerEmail: customerEmail,
+    paymentMethod: p?.label || '',
+    customerEmail: customerEmail
   };
 
   const text = [
@@ -408,7 +407,7 @@ function buildOrder() {
     calc.discount.amount ? `Subtotal before discount: ${money.format(calc.subtotal)}` : '',
     notes ? `Notes: ${notes}` : '',
     `Total: ${money.format(calc.total)}`,
-    p ? `Payment: ${p.label} (${p.handle})` : ''
+    p ? `Payment: ${p.label}` : ''
   ].filter(Boolean).join('\n');
 
   return { text, payment: p, payload };
@@ -436,11 +435,6 @@ function continueToPaymentAfterSubmit() {
       `Please include <strong>${orderNumber}</strong> in the payment note.`;
   }
 
-  // Hide any old mobile payment button/link from earlier versions.
-  if (els.mobilePaymentAction) {
-}
-  if (els.mobilePaymentLink) {
-}
 }
 
 async function submitOrderToSheet() {
@@ -518,7 +512,7 @@ els.review.textContent = currentOrder.text;
 
   els.submitOrder.disabled = false;
   els.submitOrder.textContent = 'Submit Order';
-  els.submitStatus.textContent = 'Submit the order to save it before opening payment.';
+  els.submitStatus.textContent = 'Submit the order to complete your order and view payment details.';
   els.submitStatus.className = 'submit-status';
 
   els.dialog.showModal();

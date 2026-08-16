@@ -36,10 +36,10 @@ button, input, textarea { font: inherit; }
 .card h2, .summary-card h2 { margin: 0 0 18px; font-size: 1.15rem; }
 .card h2 span, .field-label span { color: var(--danger); }
 .field-label { display: block; margin-bottom: 9px; font-weight: 700; }
-input[type="text"], textarea {
+input[type="text"], input[type="email"], textarea {
   width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; background: #fbfbfc; outline: none;
 }
-input[type="text"]:focus, textarea:focus { border-color: #8c929b; box-shadow: 0 0 0 4px rgba(17,24,39,.06); }
+input[type="text"]:focus, input[type="email"]:focus, textarea:focus { border-color: #8c929b; box-shadow: 0 0 0 4px rgba(17,24,39,.06); }
 .discount-box { margin: 18px 0 4px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: #fbfbfc; }
 .discount-row { display: grid; grid-template-columns: 1fr auto; gap: 9px; }
 .discount-row .secondary-button { white-space: nowrap; }
@@ -195,4 +195,13 @@ pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f8; padding
   display: block;
   text-align: center;
   text-decoration: none;
+}
+
+.optional-label {
+  color: var(--muted) !important;
+  font-weight: 600;
+  font-size: .88rem;
+}
+.email-hint {
+  margin: 8px 0 0;
 }
