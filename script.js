@@ -20,44 +20,26 @@ const els = {
   viewOrderButton: document.getElementById('viewOrderButton'),
   submitOrder: document.getElementById('submitOrder'),
   submitStatus: document.getElementById('submitStatus'),
+  shippingFields: document.getElementById('shippingFields'),
+  getShippingRate: document.getElementById('getShippingRate'),
+  shippingRateMessage: document.getElementById('shippingRateMessage'),
 };
 
 let activeDiscount = null;
 let currentOrder = null;
 let orderSubmitted = false;
+let shippingQuote = null;
 
 function optionPrice(price, prefix = '+') {
   return Number(price) ? `${prefix}${money.format(price)}` : '';
 }
 
 function renderTypes() {
-  const types = Object.keys(cfg.products);
-  els.type.innerHTML = types.map((name, i) => {
-    return `
-      <label class="option-label">
-        <input type="radio" name="shirtType" value="${name}" ${i === 0 ? 'required' : ''}>
-        <span>${name}</span>
-      </label>`;
-  }).join('');
+  // Single shirt type; selected automatically.
 }
 
 function renderBrands(typeName) {
-  const items = cfg.products[typeName] || [];
-  if (!items.length) {
-    els.brand.innerHTML = '<p class="empty-state">Choose a shirt type first.</p>';
-    return;
-  }
-
-  els.brand.innerHTML = items.map((item, i) => `
-    <label class="option-label">
-      <input type="radio" name="brand" value="${item.brand}" data-garment-price="${item.garmentPrice}" ${i === 0 ? 'required' : ''}>
-      <span>${item.brand}</span>
-      <span class="option-price">garment ${money.format(item.garmentPrice)}</span>
-    </label>`).join('');
-
-  if (items.length === 1) {
-    els.brand.querySelector('input[name="brand"]').checked = true;
-  }
+  // Brand selection removed; using the single configured product.
 }
 
 function renderSizes() {
@@ -92,13 +74,25 @@ function renderPayments() {
     </label>`).join('');
 }
 
-renderTypes();
 renderSizes();
-renderPrintLocations();
 renderPayments();
 
 function selectedRadio(name) {
-  return document.querySelector(`input[name="${name}"]:checked`);
+  const selected = document.querySelector(`input[name="${name}"]:checked`);
+  if (selected) return selected;
+
+  if (name === 'shirtType') {
+    return { value: 'Short Sleeve T-Shirt' };
+  }
+
+  if (name === 'brand') {
+    return {
+      value: 'Standard',
+      dataset: { garmentPrice: '18' }
+    };
+  }
+
+  return null;
 }
 
 function selectedChecks(name) {
@@ -167,44 +161,169 @@ function validateDiscountWithServer(code, subtotal) {
   });
 }
 
+
+function getDeliveryMethod() {
+  return selectedRadio('deliveryMethod')?.value || 'pickup';
+}
+
+function getShippingAddress() {
+  return {
+    name: document.getElementById('customerName')?.value.trim() || '',
+    street1: document.getElementById('shipAddress1')?.value.trim() || '',
+    street2: document.getElementById('shipAddress2')?.value.trim() || '',
+    city: document.getElementById('shipCity')?.value.trim() || '',
+    state: document.getElementById('shipState')?.value.trim().toUpperCase() || '',
+    zip: document.getElementById('shipZip')?.value.trim() || '',
+    country: 'US'
+  };
+}
+
+function shippingAddressIsComplete() {
+  const a = getShippingAddress();
+  return Boolean(a.name && a.street1 && a.city && a.state && a.zip);
+}
+
+function clearShippingQuote(message = '') {
+  shippingQuote = null;
+  if (els.shippingRateMessage) {
+    els.shippingRateMessage.textContent = message;
+    els.shippingRateMessage.className = 'shipping-rate-message';
+  }
+}
+
+async function requestShippingRate() {
+  if (getDeliveryMethod() !== 'shipping') return;
+
+  const calc = calculate();
+
+  if (!calc.itemCount) {
+    els.shippingRateMessage.textContent = 'Select at least one shirt size and quantity first.';
+    els.shippingRateMessage.className = 'shipping-rate-message error';
+    return;
+  }
+
+  if (!shippingAddressIsComplete()) {
+    els.shippingRateMessage.textContent = 'Enter the complete shipping address first.';
+    els.shippingRateMessage.className = 'shipping-rate-message error';
+    return;
+  }
+
+  els.getShippingRate.disabled = true;
+  els.getShippingRate.textContent = 'Getting Rate…';
+  els.shippingRateMessage.textContent = 'Checking Shippo rates…';
+  els.shippingRateMessage.className = 'shipping-rate-message';
+
+  try {
+    const response = await fetch(cfg.googleSheetsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'shippingRate',
+        address: getShippingAddress(),
+        itemCount: calc.itemCount
+      }),
+      redirect: 'follow'
+    });
+
+    const result = await response.json();
+
+    if (!result || result.success !== true) {
+      throw new Error(result?.error || 'No shipping rate was returned.');
+    }
+
+    shippingQuote = {
+      amount: Number(result.amount || 0),
+      provider: result.provider || '',
+      service: result.service || '',
+      estimatedDays: result.estimatedDays ?? null
+    };
+
+    const days = shippingQuote.estimatedDays
+      ? ` • about ${shippingQuote.estimatedDays} business day${shippingQuote.estimatedDays === 1 ? '' : 's'}`
+      : '';
+
+    els.shippingRateMessage.textContent =
+      `${shippingQuote.provider} ${shippingQuote.service}: ${money.format(shippingQuote.amount)}${days}`;
+    els.shippingRateMessage.className = 'shipping-rate-message success';
+    calculate();
+  } catch (error) {
+    shippingQuote = null;
+    els.shippingRateMessage.textContent =
+      `Unable to calculate shipping. ${error.message || 'Please try again.'}`;
+    els.shippingRateMessage.className = 'shipping-rate-message error';
+    calculate();
+  } finally {
+    els.getShippingRate.disabled = false;
+    els.getShippingRate.textContent = 'Get Shipping Rate';
+  }
+}
+
 function calculate() {
   const type = selectedRadio('shirtType');
   const brand = selectedRadio('brand');
-  const locations = selectedChecks('printLocation');
   const sizes = getSizeSelections();
 
   const garmentPrice = Number(brand?.dataset.garmentPrice || 0);
-  const printPricePerShirt = locations.reduce((sum, item) => sum + Number(item.dataset.price || 0), 0);
   const itemCount = sizes.reduce((sum, item) => sum + item.qty, 0);
   const garmentSubtotal = garmentPrice * itemCount;
-  const printSubtotal = printPricePerShirt * itemCount;
   const sizeSubtotal = sizes.reduce((sum, item) => sum + (item.upcharge * item.qty), 0);
-  const subtotal = garmentSubtotal + printSubtotal + sizeSubtotal;
+
+  // Discounts apply to merchandise only. Shipping is added afterward.
+  const subtotal = garmentSubtotal + sizeSubtotal;
   const discount = getDiscount(subtotal);
-  const total = Math.max(0, subtotal - discount.amount);
+  const shippingAmount =
+    getDeliveryMethod() === 'shipping' && shippingQuote
+      ? Number(shippingQuote.amount || 0)
+      : 0;
+
+  const total = Math.max(0, subtotal - discount.amount) + shippingAmount;
 
   const lines = [];
-  if (type) lines.push(['Type', type.value, '']);
-  if (brand) lines.push(['Brand', brand.value, '']);
+  if (type) lines.push(['Shirt', type.value, '']);
   if (sizes.length) lines.push(['Sizes', sizes.map(s => `${s.name} × ${s.qty}`).join(', '), '']);
-  if (locations.length) lines.push(['Print', locations.map(x => x.value).join(', '), '']);
   lines.push(['Items', String(itemCount), '']);
 
-  if (itemCount && brand) {
-    lines.push(['Garments', money.format(garmentSubtotal), '']);
-    if (printSubtotal) lines.push(['Printing', money.format(printSubtotal), '']);
+  if (itemCount) {
+    lines.push(['Shirts', money.format(garmentSubtotal), '']);
     if (sizeSubtotal) lines.push(['Size upcharges', money.format(sizeSubtotal), '']);
-    if (discount.amount) lines.push([`Discount (${discount.code})`, `−${money.format(discount.amount)}`, 'discount-line']);
+    if (discount.amount) {
+      lines.push([`Discount (${discount.code})`, `−${money.format(discount.amount)}`, 'discount-line']);
+    }
+
+    if (getDeliveryMethod() === 'pickup') {
+      lines.push(['Delivery', 'Local Pickup - Smyrna, GA', '']);
+    } else if (shippingQuote) {
+      lines.push([
+        'Shipping',
+        `${shippingQuote.provider} ${shippingQuote.service} • ${money.format(shippingAmount)}`,
+        ''
+      ]);
+    } else {
+      lines.push(['Shipping', 'Rate required', '']);
+    }
   }
 
   els.lines.innerHTML = lines.map(([label, value, cls]) => `
     <div class="summary-line ${cls}"><span>${label}</span><span>${value}</span></div>`).join('');
+
   els.total.textContent = money.format(total);
   if (els.mobileTotal) {
-  els.mobileTotal.textContent = money.format(total);
-}
+    els.mobileTotal.textContent = money.format(total);
+  }
 
-  return { total, subtotal, discount, itemCount, sizes, type, brand, locations, garmentPrice, printPricePerShirt, garmentSubtotal, printSubtotal, sizeSubtotal };
+  return {
+    total,
+    subtotal,
+    discount,
+    shippingAmount,
+    itemCount,
+    sizes,
+    type,
+    brand,
+    garmentPrice,
+    garmentSubtotal,
+    sizeSubtotal
+  };
 }
 function updatePaymentInstructions() {
   const choice = selectedRadio('payment');
@@ -229,15 +348,33 @@ function updatePaymentInstructions() {
 
 function validateRequiredGroups() {
   const sizeBoxes = document.querySelectorAll('input[name="size"]');
-  const printBoxes = document.querySelectorAll('input[name="printLocation"]');
   const anySize = selectedChecks('size').length > 0;
-  const anyPrint = selectedChecks('printLocation').length > 0;
+  const delivery = getDeliveryMethod();
 
-  if (sizeBoxes[0]) sizeBoxes[0].setCustomValidity(anySize ? '' : 'Please select at least one shirt size.');
-  if (printBoxes[0]) printBoxes[0].setCustomValidity(anyPrint ? '' : 'Please select at least one print location.');
-  return anySize && anyPrint;
+  if (sizeBoxes[0]) {
+    sizeBoxes[0].setCustomValidity(anySize ? '' : 'Please select at least one shirt size.');
+  }
+
+  const address1 = document.getElementById('shipAddress1');
+  if (delivery === 'shipping') {
+    const addressComplete = shippingAddressIsComplete();
+    if (address1) {
+      address1.setCustomValidity(addressComplete ? '' : 'Enter a complete shipping address.');
+    }
+
+    if (!addressComplete) return false;
+
+    if (!shippingQuote) {
+      els.shippingRateMessage.textContent = 'Click Get Shipping Rate before reviewing the order.';
+      els.shippingRateMessage.className = 'shipping-rate-message error';
+      return false;
+    }
+  } else if (address1) {
+    address1.setCustomValidity('');
+  }
+
+  return anySize;
 }
-
 function update() {
   document.querySelectorAll('input[name="size"]').forEach(box => {
     const qty = document.querySelector(`.size-qty[data-size="${CSS.escape(box.value)}"]`);
@@ -350,12 +487,33 @@ els.discountCode.addEventListener('input', () => {
 });
 
 document.addEventListener('change', (event) => {
-  if (event.target.matches('input[name="shirtType"]')) {
-    renderBrands(event.target.value);
+  if (event.target.matches('input[name="deliveryMethod"]')) {
+    const shipping = event.target.value === 'shipping';
+    els.shippingFields.classList.toggle('hidden', !shipping);
+    clearShippingQuote(
+      shipping ? 'Enter the shipping address, then click Get Shipping Rate.' : ''
+    );
   }
+
+  if (event.target.matches('input[name="size"], .size-qty') && shippingQuote) {
+    clearShippingQuote('Quantity changed. Please get a new shipping rate.');
+  }
+
   update();
 });
-document.addEventListener('input', update);
+
+document.addEventListener('input', (event) => {
+  if (
+    event.target.matches('#shipAddress1, #shipAddress2, #shipCity, #shipState, #shipZip') &&
+    shippingQuote
+  ) {
+    clearShippingQuote('Shipping address changed. Please get a new shipping rate.');
+  }
+
+  update();
+});
+
+els.getShippingRate?.addEventListener('click', requestShippingRate);
 update();
 
 function buildOrder() {
@@ -368,9 +526,10 @@ function buildOrder() {
   const image = document.getElementById('printImage').value.trim();
   const notes = document.getElementById('notes').value.trim();
   const customerEmail = document.getElementById('customerEmail').value.trim();
+  const deliveryMethod = getDeliveryMethod();
+  const shippingAddress = deliveryMethod === 'shipping' ? getShippingAddress() : null;
 
   const sizesText = calc.sizes.map(s => `${s.name} x${s.qty}`).join(', ');
-  const locationsText = calc.locations.map(x => x.value).join(', ');
 
   const payload = {
     orderNumber: orderId,
@@ -379,7 +538,7 @@ function buildOrder() {
     brand: calc.brand?.value || '',
     color: color,
     sizes: sizesText,
-    printLocations: locationsText,
+    itemCount: calc.itemCount,
     printImage: image,
     notes: notes,
     subtotal: Number(calc.subtotal.toFixed(2)),
@@ -387,7 +546,12 @@ function buildOrder() {
     discountAmount: Number(calc.discount.amount.toFixed(2)),
     total: Number(calc.total.toFixed(2)),
     paymentMethod: p?.label || '',
-    customerEmail: customerEmail
+    customerEmail: customerEmail,
+    deliveryMethod: deliveryMethod === 'shipping' ? 'Shipping' : 'Local Pickup - Smyrna, GA',
+    shippingAmount: Number(calc.shippingAmount.toFixed(2)),
+    shippingProvider: shippingQuote?.provider || '',
+    shippingService: shippingQuote?.service || '',
+    shippingAddress: shippingAddress
   };
 
   const text = [
@@ -395,13 +559,17 @@ function buildOrder() {
     `Customer: ${customer}`,
     customerEmail ? `Email: ${customerEmail}` : '',
     `Shirt Type: ${payload.shirtType || 'Not selected'}`,
-    `Brand: ${payload.brand || 'Not selected'}`,
     `Size(s): ${sizesText || 'Not selected'}`,
     `Color: ${color}`,
+    `Delivery: ${payload.deliveryMethod}`,
+    deliveryMethod === 'shipping'
+      ? `Shipping Address: ${shippingAddress.street1}${shippingAddress.street2 ? ', ' + shippingAddress.street2 : ''}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`
+      : '',
+    deliveryMethod === 'shipping'
+      ? `Shipping: ${shippingQuote.provider} ${shippingQuote.service} - ${money.format(calc.shippingAmount)}`
+      : '',
     `Print Image: ${image}`,
-    `Print Location(s): ${locationsText}`,
     `Garment subtotal: ${money.format(calc.garmentSubtotal)}`,
-    calc.printSubtotal ? `Print subtotal: ${money.format(calc.printSubtotal)}` : '',
     calc.sizeSubtotal ? `Size upcharges: ${money.format(calc.sizeSubtotal)}` : '',
     calc.discount.amount ? `Discount (${calc.discount.code}): -${money.format(calc.discount.amount)}` : '',
     calc.discount.amount ? `Subtotal before discount: ${money.format(calc.subtotal)}` : '',
@@ -449,11 +617,12 @@ async function submitOrderToSheet() {
 
   els.submitOrder.disabled = true;
   els.submitOrder.textContent = 'Submitting…';
-  els.submitStatus.textContent = 'Saving order…';
+  els.submitStatus.textContent = 'Submitting order and verifying final pricing…';
   els.submitStatus.className = 'submit-status';
 
   try {
-    // text/plain keeps the request "simple" and avoids an Apps Script CORS preflight.
+    // The Apps Script backend independently recalculates merchandise pricing,
+    // discounts, and Shippo shipping before accepting the order.
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -461,43 +630,35 @@ async function submitOrderToSheet() {
       redirect: 'follow'
     });
 
-    let result = null;
-    try {
-      result = await response.json();
-    } catch (_) {
-      // Some Apps Script deployments return an opaque/redirected response.
+    const result = await response.json();
+
+    if (!result || result.success !== true) {
+      throw new Error(result?.error || 'The server did not accept the order.');
     }
 
-    if (result && result.success === false) {
-      throw new Error(result.error || 'Your order has been rejected.');
-    }
+    // Use the trusted server-calculated values from this point forward.
+    currentOrder.payload.subtotal = Number(result.subtotal || 0);
+    currentOrder.payload.discountCode = result.discountCode || '';
+    currentOrder.payload.discountAmount = Number(result.discountAmount || 0);
+    currentOrder.payload.shippingAmount = Number(result.shippingAmount || 0);
+    currentOrder.payload.shippingProvider = result.shippingProvider || '';
+    currentOrder.payload.shippingService = result.shippingService || '';
+    currentOrder.payload.total = Number(result.total || 0);
 
     orderSubmitted = true;
     els.submitOrder.textContent = 'Order Submitted ✓';
-    els.submitStatus.textContent = `Order ${currentOrder.payload.orderNumber} has been submitted.`;
+    els.submitStatus.textContent =
+      `Order ${currentOrder.payload.orderNumber} has been submitted.`;
     els.submitStatus.className = 'submit-status success';
+
     continueToPaymentAfterSubmit();
+
   } catch (error) {
-    // Fallback for browsers/deployments that block reading the Apps Script response
-    // even though the POST itself is allowed.
-    try {
-      await fetch(url, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(currentOrder.payload)
-      });
-      orderSubmitted = true;
-      els.submitOrder.textContent = 'Order Submitted ✓';
-      els.submitStatus.textContent = `Order ${currentOrder.payload.orderNumber} has been submitted.`;
-      els.submitStatus.className = 'submit-status success';
-      continueToPaymentAfterSubmit();
-    } catch (fallbackError) {
-      els.submitOrder.disabled = false;
-      els.submitOrder.textContent = 'Submit Order';
-      els.submitStatus.textContent = 'The order could not be sent. Check your internet connection and Apps Script deployment.';
-      els.submitStatus.className = 'submit-status error';
-    }
+    els.submitOrder.disabled = false;
+    els.submitOrder.textContent = 'Submit Order';
+    els.submitStatus.textContent =
+      `The order could not be submitted: ${error.message || 'Please try again.'}`;
+    els.submitStatus.className = 'submit-status error';
   }
 }
 

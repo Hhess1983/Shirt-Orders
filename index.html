@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
   <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet" />
   <title>Shirt Order</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260824-shippo" />
 </head>
 <body>
   <div class="mobile-total-bar">
@@ -22,7 +22,7 @@
       <div>
         <p class="eyebrow">CUSTOM APPAREL</p>
         <h1>Shirt Order</h1>
-        <p class="hero-copy">Choose your garment, sizes and print locations. Your price updates automatically as you build the order.</p>
+        <p class="hero-copy">Choose your size, quantity and delivery method. Your price updates automatically as you build the order.</p>
       </div>
       <div class="hero-badge">Build • Review • Pay</div>
     </section>
@@ -45,19 +45,13 @@
 </article>
 
         <article class="card">
-          <h2>Shirt Type <span>*</span></h2>
-          <p class="hint">Select a garment type. Available brands will update automatically.</p>
-          <div id="shirtTypeOptions" class="option-grid"></div>
-        </article>
-
-        <article class="card">
-          <h2>Shirt Brand <span>*</span></h2>
-          <div id="brandOptions" class="option-grid">
-            <p class="empty-state">Choose a shirt type first.</p>
+          <h2>Shirt</h2>
+          <div class="option-label fixed-option">
+            <span>Short Sleeve T-Shirt</span>
+            <span class="option-price">$18.00</span>
           </div>
         </article>
-
-        <article class="card">
+<article class="card">
           <h2>Shirt Size & Quantity <span>*</span></h2>
           <p class="hint">Choose one or more sizes. 2XL and larger are +$3 per shirt.</p>
           <div id="sizeOptions" class="size-list"></div>
@@ -75,12 +69,55 @@
         </article>
 
         <article class="card">
-          <h2>Print Location <span>*</span></h2>
-          <p class="hint">Select every location you want printed. Print pricing is charged per shirt.</p>
-          <div id="printLocationOptions" class="option-grid"></div>
+          <h2>Delivery Method <span>*</span></h2>
+          <div class="option-grid delivery-options">
+            <label class="option-label">
+              <input type="radio" name="deliveryMethod" value="pickup" required checked>
+              <span>Local Pickup - Smyrna, GA</span>
+              <span class="option-price">Free</span>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="deliveryMethod" value="shipping">
+              <span>Shipping</span>
+            </label>
+          </div>
+
+          <div id="shippingFields" class="shipping-fields hidden">
+            <div class="shipping-grid">
+              <div class="full-width">
+                <label class="field-label" for="shipAddress1">Street Address <span>*</span></label>
+                <input id="shipAddress1" type="text" autocomplete="shipping address-line1" placeholder="123 Main St">
+              </div>
+
+              <div class="full-width">
+                <label class="field-label" for="shipAddress2">Apartment / Suite</label>
+                <input id="shipAddress2" type="text" autocomplete="shipping address-line2" placeholder="Optional">
+              </div>
+
+              <div>
+                <label class="field-label" for="shipCity">City <span>*</span></label>
+                <input id="shipCity" type="text" autocomplete="shipping address-level2">
+              </div>
+
+              <div>
+                <label class="field-label" for="shipState">State <span>*</span></label>
+                <input id="shipState" type="text" maxlength="2" autocomplete="shipping address-level1" placeholder="GA">
+              </div>
+
+              <div>
+                <label class="field-label" for="shipZip">ZIP Code <span>*</span></label>
+                <input id="shipZip" type="text" inputmode="numeric" autocomplete="shipping postal-code" placeholder="30080">
+              </div>
+            </div>
+
+            <button id="getShippingRate" type="button" class="secondary-button shipping-rate-button">
+              Get Shipping Rate
+            </button>
+            <div id="shippingRateMessage" class="shipping-rate-message" aria-live="polite"></div>
+          </div>
         </article>
 
-        <article class="card">
+<article class="card">
           <label class="field-label" for="notes">Order Notes</label>
           <textarea id="notes" name="notes" rows="4" placeholder="Anything else we should know?"></textarea>
         </article>
@@ -97,7 +134,7 @@
           </div>
 
           <div class="notice success-notice">
-            Pricing is live. The total includes the garment, selected print locations, size upcharges and quantities.
+            Pricing is live. The total includes shirts, size upcharges, quantities, discounts and shipping when selected.
           </div>
 
           <div id="summaryLines" class="summary-lines"></div>
@@ -139,7 +176,7 @@
     </div>
   </dialog>
 
-  <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script src="config.js?v=20260824-shippo"></script>
+  <script src="script.js?v=20260824-shippo"></script>
 </body>
 </html>

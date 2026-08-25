@@ -205,3 +205,51 @@ pre { white-space: pre-wrap; word-wrap: break-word; background: #f7f7f8; padding
 .email-hint {
   margin: 8px 0 0;
 }
+
+
+.shipping-fields {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.shipping-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.shipping-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.shipping-rate-button {
+  margin-top: 14px;
+}
+
+.shipping-rate-message {
+  min-height: 22px;
+  margin-top: 10px;
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+.shipping-rate-message.success {
+  color: #255b38;
+  font-weight: 700;
+}
+
+.shipping-rate-message.error {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .shipping-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shipping-grid .full-width {
+    grid-column: auto;
+  }
+}
