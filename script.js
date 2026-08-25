@@ -35,11 +35,33 @@ function optionPrice(price, prefix = '+') {
 }
 
 function renderTypes() {
-  // Single shirt type; selected automatically.
+  const types = Object.keys(cfg.products);
+
+  els.type.innerHTML = types.map((name, i) => `
+    <label class="option-label">
+      <input type="radio" name="shirtType" value="${name}" ${i === 0 ? 'required' : ''}>
+      <span>${name}</span>
+    </label>`).join('');
 }
 
 function renderBrands(typeName) {
-  // Brand selection removed; using the single configured product.
+  const items = cfg.products[typeName] || [];
+
+  if (!items.length) {
+    els.brand.innerHTML = '<p class="empty-state">Choose a shirt type first.</p>';
+    return;
+  }
+
+  els.brand.innerHTML = items.map((item, i) => `
+    <label class="option-label">
+      <input type="radio" name="brand" value="${item.brand}" data-garment-price="${item.garmentPrice}" ${i === 0 ? 'required' : ''}>
+      <span>${item.brand}</span>
+      <span class="option-price">${money.format(item.garmentPrice)}</span>
+    </label>`).join('');
+
+  if (items.length === 1) {
+    els.brand.querySelector('input[name="brand"]').checked = true;
+  }
 }
 
 function renderSizes() {
@@ -74,25 +96,13 @@ function renderPayments() {
     </label>`).join('');
 }
 
+renderTypes();
 renderSizes();
+renderPrintLocations();
 renderPayments();
 
 function selectedRadio(name) {
-  const selected = document.querySelector(`input[name="${name}"]:checked`);
-  if (selected) return selected;
-
-  if (name === 'shirtType') {
-    return { value: 'Short Sleeve T-Shirt' };
-  }
-
-  if (name === 'brand') {
-    return {
-      value: 'Standard',
-      dataset: { garmentPrice: '18' }
-    };
-  }
-
-  return null;
+  return document.querySelector(`input[name="${name}"]:checked`);
 }
 
 function selectedChecks(name) {
@@ -262,32 +272,75 @@ function calculate() {
   const type = selectedRadio('shirtType');
   const brand = selectedRadio('brand');
   const sizes = getSizeSelections();
+  const locations = selectedChecks('printLocation');
 
   const garmentPrice = Number(brand?.dataset.garmentPrice || 0);
   const itemCount = sizes.reduce((sum, item) => sum + item.qty, 0);
   const garmentSubtotal = garmentPrice * itemCount;
-  const sizeSubtotal = sizes.reduce((sum, item) => sum + (item.upcharge * item.qty), 0);
+  const sizeSubtotal = sizes.reduce(
+    (sum, item) => sum + (item.upcharge * item.qty),
+    0
+  );
 
-  // Discounts apply to merchandise only. Shipping is added afterward.
-  const subtotal = garmentSubtotal + sizeSubtotal;
+  const printPricePerShirt = locations.reduce(
+    (sum, item) => sum + Number(item.dataset.price || 0),
+    0
+  );
+  const printSubtotal = printPricePerShirt * itemCount;
+
+  const subtotal =
+    garmentSubtotal + sizeSubtotal + printSubtotal;
+
   const discount = getDiscount(subtotal);
+
   const shippingAmount =
     getDeliveryMethod() === 'shipping' && shippingQuote
       ? Number(shippingQuote.amount || 0)
       : 0;
 
-  const total = Math.max(0, subtotal - discount.amount) + shippingAmount;
+  const total =
+    Math.max(0, subtotal - discount.amount) + shippingAmount;
 
   const lines = [];
-  if (type) lines.push(['Shirt', type.value, '']);
-  if (sizes.length) lines.push(['Sizes', sizes.map(s => `${s.name} × ${s.qty}`).join(', '), '']);
+
+  if (type) lines.push(['Shirt Type', type.value, '']);
+  if (brand) lines.push(['Brand', brand.value, '']);
+
+  if (sizes.length) {
+    lines.push([
+      'Sizes',
+      sizes.map(s => `${s.name} × ${s.qty}`).join(', '),
+      ''
+    ]);
+  }
+
+  if (locations.length) {
+    lines.push([
+      'Print',
+      locations.map(location => location.value).join(', '),
+      ''
+    ]);
+  }
+
   lines.push(['Items', String(itemCount), '']);
 
   if (itemCount) {
-    lines.push(['Shirts', money.format(garmentSubtotal), '']);
-    if (sizeSubtotal) lines.push(['Size upcharges', money.format(sizeSubtotal), '']);
+    lines.push(['Garments', money.format(garmentSubtotal), '']);
+
+    if (sizeSubtotal) {
+      lines.push(['Size upcharges', money.format(sizeSubtotal), '']);
+    }
+
+    if (printSubtotal) {
+      lines.push(['Printing', money.format(printSubtotal), '']);
+    }
+
     if (discount.amount) {
-      lines.push([`Discount (${discount.code})`, `−${money.format(discount.amount)}`, 'discount-line']);
+      lines.push([
+        `Discount (${discount.code})`,
+        `−${money.format(discount.amount)}`,
+        'discount-line'
+      ]);
     }
 
     if (getDeliveryMethod() === 'pickup') {
@@ -307,6 +360,7 @@ function calculate() {
     <div class="summary-line ${cls}"><span>${label}</span><span>${value}</span></div>`).join('');
 
   els.total.textContent = money.format(total);
+
   if (els.mobileTotal) {
     els.mobileTotal.textContent = money.format(total);
   }
@@ -320,9 +374,12 @@ function calculate() {
     sizes,
     type,
     brand,
+    locations,
     garmentPrice,
     garmentSubtotal,
-    sizeSubtotal
+    sizeSubtotal,
+    printPricePerShirt,
+    printSubtotal
   };
 }
 function updatePaymentInstructions() {
@@ -347,33 +404,68 @@ function updatePaymentInstructions() {
 }
 
 function validateRequiredGroups() {
+  const typeBoxes = document.querySelectorAll('input[name="shirtType"]');
+  const brandBoxes = document.querySelectorAll('input[name="brand"]');
   const sizeBoxes = document.querySelectorAll('input[name="size"]');
+  const printBoxes = document.querySelectorAll('input[name="printLocation"]');
+
+  const hasType = Boolean(selectedRadio('shirtType'));
+  const hasBrand = Boolean(selectedRadio('brand'));
   const anySize = selectedChecks('size').length > 0;
+  const anyPrint = selectedChecks('printLocation').length > 0;
   const delivery = getDeliveryMethod();
 
+  if (typeBoxes[0]) {
+    typeBoxes[0].setCustomValidity(
+      hasType ? '' : 'Please select a shirt type.'
+    );
+  }
+
+  if (brandBoxes[0]) {
+    brandBoxes[0].setCustomValidity(
+      hasBrand ? '' : 'Please select a shirt brand.'
+    );
+  }
+
   if (sizeBoxes[0]) {
-    sizeBoxes[0].setCustomValidity(anySize ? '' : 'Please select at least one shirt size.');
+    sizeBoxes[0].setCustomValidity(
+      anySize ? '' : 'Please select at least one shirt size.'
+    );
+  }
+
+  if (printBoxes[0]) {
+    printBoxes[0].setCustomValidity(
+      anyPrint ? '' : 'Please select at least one print location.'
+    );
   }
 
   const address1 = document.getElementById('shipAddress1');
+
   if (delivery === 'shipping') {
     const addressComplete = shippingAddressIsComplete();
+
     if (address1) {
-      address1.setCustomValidity(addressComplete ? '' : 'Enter a complete shipping address.');
+      address1.setCustomValidity(
+        addressComplete
+          ? ''
+          : 'Enter a complete shipping address.'
+      );
     }
 
     if (!addressComplete) return false;
 
     if (!shippingQuote) {
-      els.shippingRateMessage.textContent = 'Click Get Shipping Rate before reviewing the order.';
-      els.shippingRateMessage.className = 'shipping-rate-message error';
+      els.shippingRateMessage.textContent =
+        'Click Get Shipping Rate before reviewing the order.';
+      els.shippingRateMessage.className =
+        'shipping-rate-message error';
       return false;
     }
   } else if (address1) {
     address1.setCustomValidity('');
   }
 
-  return anySize;
+  return hasType && hasBrand && anySize && anyPrint;
 }
 function update() {
   document.querySelectorAll('input[name="size"]').forEach(box => {
@@ -487,21 +579,38 @@ els.discountCode.addEventListener('input', () => {
 });
 
 document.addEventListener('change', (event) => {
+  if (event.target.matches('input[name="shirtType"]')) {
+    renderBrands(event.target.value);
+
+    // Changing products can change the merchandise subtotal.
+    activeDiscount = null;
+    els.discountMessage.textContent = '';
+    els.discountMessage.className = 'discount-message';
+  }
+
   if (event.target.matches('input[name="deliveryMethod"]')) {
     const shipping = event.target.value === 'shipping';
+
     els.shippingFields.classList.toggle('hidden', !shipping);
+
     clearShippingQuote(
-      shipping ? 'Enter the shipping address, then click Get Shipping Rate.' : ''
+      shipping
+        ? 'Enter the shipping address, then click Get Shipping Rate.'
+        : ''
     );
   }
 
-  if (event.target.matches('input[name="size"], .size-qty') && shippingQuote) {
-    clearShippingQuote('Quantity changed. Please get a new shipping rate.');
+  if (
+    event.target.matches('input[name="size"], .size-qty') &&
+    shippingQuote
+  ) {
+    clearShippingQuote(
+      'Quantity changed. Please get a new shipping rate.'
+    );
   }
 
   update();
 });
-
 document.addEventListener('input', (event) => {
   if (
     event.target.matches('#shipAddress1, #shipAddress2, #shipCity, #shipState, #shipZip') &&
@@ -521,15 +630,34 @@ function buildOrder() {
   const paymentKey = selectedRadio('payment')?.value;
   const p = paymentKey ? cfg.payments[paymentKey] : null;
   const orderId = `SO-${Date.now().toString().slice(-6)}`;
-  const customer = document.getElementById('customerName').value.trim();
-  const color = document.getElementById('shirtColor').value.trim();
-  const image = document.getElementById('printImage').value.trim();
-  const notes = document.getElementById('notes').value.trim();
-  const customerEmail = document.getElementById('customerEmail').value.trim();
-  const deliveryMethod = getDeliveryMethod();
-  const shippingAddress = deliveryMethod === 'shipping' ? getShippingAddress() : null;
 
-  const sizesText = calc.sizes.map(s => `${s.name} x${s.qty}`).join(', ');
+  const customer =
+    document.getElementById('customerName').value.trim();
+  const color =
+    document.getElementById('shirtColor').value.trim();
+  const image =
+    document.getElementById('printImage').value.trim();
+  const notes =
+    document.getElementById('notes').value.trim();
+  const customerEmail =
+    document.getElementById('customerEmail').value.trim();
+
+  const deliveryMethod = getDeliveryMethod();
+
+  const shippingAddress =
+    deliveryMethod === 'shipping'
+      ? getShippingAddress()
+      : null;
+
+  const sizesText =
+    calc.sizes
+      .map(s => `${s.name} x${s.qty}`)
+      .join(', ');
+
+  const printLocationsText =
+    calc.locations
+      .map(location => location.value)
+      .join(', ');
 
   const payload = {
     orderNumber: orderId,
@@ -539,19 +667,36 @@ function buildOrder() {
     color: color,
     sizes: sizesText,
     itemCount: calc.itemCount,
+    printLocations: printLocationsText,
     printImage: image,
     notes: notes,
+
+    // Display values only. Apps Script independently recalculates
+    // merchandise pricing, discounts and shipping during submission.
     subtotal: Number(calc.subtotal.toFixed(2)),
     discountCode: calc.discount.code || '',
     discountAmount: Number(calc.discount.amount.toFixed(2)),
     total: Number(calc.total.toFixed(2)),
+
     paymentMethod: p?.label || '',
     customerEmail: customerEmail,
-    deliveryMethod: deliveryMethod === 'shipping' ? 'Shipping' : 'Local Pickup - Smyrna, GA',
-    shippingAmount: Number(calc.shippingAmount.toFixed(2)),
-    shippingProvider: shippingQuote?.provider || '',
-    shippingService: shippingQuote?.service || '',
-    shippingAddress: shippingAddress
+
+    deliveryMethod:
+      deliveryMethod === 'shipping'
+        ? 'Shipping'
+        : 'Local Pickup - Smyrna, GA',
+
+    shippingAmount:
+      Number(calc.shippingAmount.toFixed(2)),
+
+    shippingProvider:
+      shippingQuote?.provider || '',
+
+    shippingService:
+      shippingQuote?.service || '',
+
+    shippingAddress:
+      shippingAddress
   };
 
   const text = [
@@ -559,28 +704,48 @@ function buildOrder() {
     `Customer: ${customer}`,
     customerEmail ? `Email: ${customerEmail}` : '',
     `Shirt Type: ${payload.shirtType || 'Not selected'}`,
+    `Brand: ${payload.brand || 'Not selected'}`,
     `Size(s): ${sizesText || 'Not selected'}`,
     `Color: ${color}`,
+    `Print Location(s): ${printLocationsText || 'Not selected'}`,
+    `Print Image: ${image}`,
     `Delivery: ${payload.deliveryMethod}`,
+
     deliveryMethod === 'shipping'
       ? `Shipping Address: ${shippingAddress.street1}${shippingAddress.street2 ? ', ' + shippingAddress.street2 : ''}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zip}`
       : '',
+
     deliveryMethod === 'shipping'
       ? `Shipping: ${shippingQuote.provider} ${shippingQuote.service} - ${money.format(calc.shippingAmount)}`
       : '',
-    `Print Image: ${image}`,
+
     `Garment subtotal: ${money.format(calc.garmentSubtotal)}`,
-    calc.sizeSubtotal ? `Size upcharges: ${money.format(calc.sizeSubtotal)}` : '',
-    calc.discount.amount ? `Discount (${calc.discount.code}): -${money.format(calc.discount.amount)}` : '',
-    calc.discount.amount ? `Subtotal before discount: ${money.format(calc.subtotal)}` : '',
+
+    calc.sizeSubtotal
+      ? `Size upcharges: ${money.format(calc.sizeSubtotal)}`
+      : '',
+
+    calc.printSubtotal
+      ? `Printing: ${money.format(calc.printSubtotal)}`
+      : '',
+
+    calc.discount.amount
+      ? `Discount (${calc.discount.code}): -${money.format(calc.discount.amount)}`
+      : '',
+
     notes ? `Notes: ${notes}` : '',
+
     `Total: ${money.format(calc.total)}`,
+
     p ? `Payment: ${p.label}` : ''
   ].filter(Boolean).join('\n');
 
-  return { text, payment: p, payload };
+  return {
+    text,
+    payment: p,
+    payload
+  };
 }
-
 function continueToPaymentAfterSubmit() {
   if (!currentOrder || !currentOrder.payment) return;
 
