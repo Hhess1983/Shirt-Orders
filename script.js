@@ -684,7 +684,7 @@ function buildOrder() {
     deliveryMethod:
       deliveryMethod === 'shipping'
         ? 'Shipping'
-        : 'Local Pickup - Smyrna, GA',
+        : 'Local Pickup - LaFayette, GA',
 
     shippingAmount:
       Number(calc.shippingAmount.toFixed(2)),
