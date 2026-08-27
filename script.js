@@ -344,7 +344,7 @@ function calculate() {
     }
 
     if (getDeliveryMethod() === 'pickup') {
-      lines.push(['Delivery', 'Local Pickup - Smyrna, GA', '']);
+      lines.push(['Delivery', 'Local Pickup - LaFayette, GA', '']);
     } else if (shippingQuote) {
       lines.push([
         'Shipping',
