@@ -9,7 +9,7 @@ window.SHIRT_ORDER_CONFIG = {
   currency: "USD",
 
   // Google Apps Script Web App used to save completed orders.
-  googleSheetsUrl: "https://script.google.com/macros/s/AKfycbw95_2HK0WTVDjpOh4muqxxZj2YQ3bkNpfGmgePGaoJoyLeFGyeixE49Pt05kNKezCyqA/exec",
+  googleSheetsUrl: "https://script.google.com/macros/s/AKfycbwbaNrLXrBjU7aRnXdfoeeCbtCYH-Zb_XIwjDBsEY7VqtTfcivC3y74ZoO4MEVYKnURPA/exec",
   // Discount codes are validated by Google Apps Script and are not stored publicly.
 
 
