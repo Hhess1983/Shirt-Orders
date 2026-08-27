@@ -61,6 +61,11 @@ window.SHIRT_ORDER_CONFIG = {
   ],
 
   payments: {
+     paypal: {
+    label: "PayPal",
+    handle: "@KHess270",
+    url: "https://paypal.me/KHess270"
+    },
     venmo: {
       label: "Venmo",
       handle: "@Heather-Hess-108",
